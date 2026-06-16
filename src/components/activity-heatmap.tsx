@@ -128,7 +128,9 @@ function buildYearGrid(year: number, activityMap: Map<string, number>) {
       dateStr: ymd,
       count,
       isFuture: isOutsideYear,
-      label: isOutsideYear ? '' : `${count} contribution${count === 1 ? '' : 's'} on ${formattedDate}`,
+      label: isOutsideYear
+        ? ''
+        : `${count} contribution${count === 1 ? '' : 's'} on ${formattedDate}`,
     });
     runningDate.setDate(runningDate.getDate() + 1);
   }
@@ -150,9 +152,7 @@ function buildYearGrid(year: number, activityMap: Map<string, number>) {
   }
 
   // Count only days within the year
-  const contributions = days
-    .filter((d) => !d.isFuture)
-    .reduce((sum, d) => sum + d.count, 0);
+  const contributions = days.filter((d) => !d.isFuture).reduce((sum, d) => sum + d.count, 0);
 
   return { days, monthLabels, numCols, contributions };
 }
@@ -162,7 +162,7 @@ export function ActivityHeatmap({ activityHistory, allTimeContributions }: Activ
 
   // Derive sorted list of years that have any contributions
   const yearsWithData = Array.from(
-    new Set(activityHistory.map((d) => parseInt(d.date.slice(0, 4), 10)))
+    new Set(activityHistory.map((d) => parseInt(d.date.slice(0, 4), 10))),
   ).sort((a, b) => b - a); // descending: newest first
 
   // Always include the current year even if no data yet
@@ -242,10 +242,7 @@ export function ActivityHeatmap({ activityHistory, allTimeContributions }: Activ
         <div className="overflow-x-auto pb-1">
           <div className="inline-block font-mono">
             {/* Month labels row */}
-            <div
-              className="relative mb-1 ml-8"
-              style={{ width: `${gridWidth}px`, height: '16px' }}
-            >
+            <div className="relative mb-1 ml-8" style={{ width: `${gridWidth}px`, height: '16px' }}>
               {monthLabels.map(({ col, label }) => (
                 <span
                   key={`${col}-${label}`}
