@@ -6,7 +6,16 @@ import { LeaderboardContent } from './leaderboard-content';
 
 export const dynamic = 'force-dynamic';
 
-export default async function LeaderboardPage() {
+export default async function LeaderboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ scope?: string; id?: string }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const scope =
+    (resolvedSearchParams.scope as 'global' | 'cohort' | 'language' | 'tag') ?? 'global';
+  const scopeId = resolvedSearchParams.id ?? null;
+
   const sb = await getServerSupabase();
 
   let userHandle: string | null = null;
@@ -33,16 +42,16 @@ export default async function LeaderboardPage() {
           .maybeSingle();
         if (profile) {
           userHandle = profile.github_handle;
-          userXp = profile.xp;
-          userLevel = profile.level;
-          userMerges = profile.github_total_merges;
-          userStreak = profile.github_streak;
+          userXp = profile.xp ?? 0;
+          userLevel = profile.level ?? 0;
+          userMerges = profile.github_total_merges ?? 0;
+          userStreak = profile.github_streak ?? 0;
         }
       }
     }
   }
 
-  const result = await getLeaderboard('global', null, 100);
+  const result = await getLeaderboard(scope, scopeId, 100);
 
   return (
     <LeaderboardContent
