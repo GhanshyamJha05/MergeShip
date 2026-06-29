@@ -10,6 +10,8 @@ vi.mock('../client', () => ({
   inngest: { createFunction: (_c: unknown, _t: unknown, h: Function) => h },
 }));
 
+const emailSent = { skipped: true } as const;
+
 const run = weeklyDigest as unknown as (ctx: { step: typeof step }) => Promise<{
   processed: number;
   skipped: number;
@@ -60,7 +62,7 @@ describe('weeklyDigest', () => {
       }),
     });
 
-    vi.mocked(sendWeeklyDigestEmail).mockResolvedValue(undefined);
+    vi.mocked(sendWeeklyDigestEmail).mockResolvedValue(emailSent);
 
     const result = await run({ step });
 
@@ -86,7 +88,7 @@ describe('weeklyDigest', () => {
       }),
     });
 
-    vi.mocked(sendWeeklyDigestEmail).mockResolvedValue(undefined);
+    vi.mocked(sendWeeklyDigestEmail).mockResolvedValue(emailSent);
 
     const result = await run({ step });
 
@@ -116,7 +118,7 @@ describe('weeklyDigest', () => {
       }),
     });
 
-    vi.mocked(sendWeeklyDigestEmail).mockResolvedValue(undefined);
+    vi.mocked(sendWeeklyDigestEmail).mockResolvedValue(emailSent);
 
     // Spy on step.run to capture step names
     const stepRunSpy = vi.spyOn(step, 'run');
@@ -149,7 +151,7 @@ describe('weeklyDigest', () => {
     // u1 fails, u2 succeeds
     vi.mocked(sendWeeklyDigestEmail)
       .mockRejectedValueOnce(new Error('email provider timeout'))
-      .mockResolvedValueOnce(undefined);
+      .mockResolvedValueOnce(emailSent);
 
     // The step for u1 will throw — simulate by catching it at the step level
     // (in production Inngest catches this per-step; in tests step.run re-throws,
@@ -229,7 +231,7 @@ describe('weeklyDigest', () => {
       }),
     });
 
-    vi.mocked(sendWeeklyDigestEmail).mockResolvedValue(undefined);
+    vi.mocked(sendWeeklyDigestEmail).mockResolvedValue(emailSent);
 
     await run({ step });
 
