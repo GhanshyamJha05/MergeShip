@@ -5,7 +5,7 @@ import { tryGetDb } from '@/lib/db/client';
 import { cacheGet, cacheSet } from '@/lib/cache';
 import { ok, err, type Result } from '@/lib/result';
 import { getServerSupabase } from '@/lib/supabase/server';
-import { getAppOctokit, getInstallOctokit } from '@/lib/github/app';
+import { getInstallOctokit, getUserOctokit } from '@/lib/github/app';
 import { requireUser } from '@/lib/action-auth';
 import { RATE_LIMIT_TIERS } from '@/lib/rate-limit';
 
@@ -28,6 +28,7 @@ const TTL = 60 * 10;
 async function getFollowedHandles(
   userId: string,
   userHandle: string | null,
+  userAccessToken: string | null,
   db: any,
 ): Promise<string[]> {
   const cacheKey = `user:following:${userId}`;
@@ -60,8 +61,17 @@ async function getFollowedHandles(
       let octokit;
       if (installId) {
         octokit = await getInstallOctokit(Number(installId));
+      } else if (userAccessToken) {
+        // An App JWT can only perform app-level operations; it cannot read a
+        // user's following list. Use the OAuth token issued during GitHub sign-in
+        // when the user has no personal installation (for example, an org install).
+        octokit = getUserOctokit(userAccessToken);
       } else {
-        octokit = getAppOctokit();
+        // Do not make an invalid unauthenticated/App-JWT request. The caller
+        // still gets their own row below, and the list can be refreshed after
+        // the user signs in again or installs the app personally.
+        followedHandles.push(activeHandle);
+        return followedHandles;
       }
       const MAX_PAGES = 5;
       let page = 1;
@@ -113,6 +123,14 @@ export async function getLeaderboard(
         const identity = user.identities?.find((i) => i.provider === 'github');
         userHandle = (identity?.identity_data?.['user_name'] as string) ?? null;
       }
+    }
+
+    let userAccessToken: string | null = null;
+    if (sb) {
+      const {
+        data: { session },
+      } = await sb.auth.getSession();
+      userAccessToken = session?.provider_token ?? null;
     }
 
     // Determine cache key. Personal scopes (like friends) are cached per-user, public ones are shared.
@@ -206,7 +224,7 @@ export async function getLeaderboard(
 
         let followedHandles: string[] = [];
         if (userId) {
-          followedHandles = await getFollowedHandles(userId, userHandle, db);
+          followedHandles = await getFollowedHandles(userId, userHandle, userAccessToken, db);
         }
 
         if (followedHandles.length > 0) {
@@ -345,7 +363,7 @@ export async function getLeaderboard(
             limit 1
           `;
         } else if (scope === 'friends') {
-          const followedHandles = await getFollowedHandles(userId, userHandle, db);
+          const followedHandles = await getFollowedHandles(userId, userHandle, userAccessToken, db);
 
           if (followedHandles.length > 0) {
             rankQuery = sql`

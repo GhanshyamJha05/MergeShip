@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   mockGetUser: vi.fn(),
+  mockGetSession: vi.fn(),
   mockExecute: vi.fn(),
   mockCacheGet: vi.fn(),
   mockCacheSet: vi.fn(),
@@ -14,6 +15,7 @@ vi.mock('@/lib/supabase/server', () => ({
   getServerSupabase: vi.fn(() => ({
     auth: {
       getUser: mocks.mockGetUser,
+      getSession: mocks.mockGetSession,
     },
   })),
 }));
@@ -40,6 +42,9 @@ vi.mock('@/lib/github/app', () => ({
       listFollowingForUser: 'listFollowingForUser',
     },
   })),
+  getUserOctokit: vi.fn(() => ({
+    request: mocks.mockRequest,
+  })),
   getInstallOctokit: vi.fn(() => ({
     paginate: mocks.mockPaginate,
     request: mocks.mockRequest,
@@ -62,6 +67,9 @@ describe('getLeaderboard', () => {
           identities: [{ provider: 'github', identity_data: { user_name: 'alice' } }],
         },
       },
+    });
+    mocks.mockGetSession.mockResolvedValue({
+      data: { session: { provider_token: 'gh-user-token' } },
     });
     mocks.mockCacheGet.mockResolvedValue(null);
     mocks.mockCacheRateLimitHitSlidingWindow.mockResolvedValue({ count: 1, resetAt: null });
@@ -159,6 +167,26 @@ describe('getLeaderboard', () => {
       expect(result.data.entries).toHaveLength(2);
       expect(result.data.entries[1]?.githubHandle).toBe('bob');
     }
+  });
+
+  it('uses the signed-in user token when no personal installation exists', async () => {
+    mocks.mockRequest.mockResolvedValueOnce({ data: [{ login: 'bob' }] });
+    mocks.mockCacheGet
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(['bob', 'alice']);
+    mocks.mockExecute.mockResolvedValueOnce([]); // no personal installation
+    mocks.mockExecute.mockResolvedValueOnce([]); // friends leaderboard rows
+    mocks.mockExecute.mockResolvedValueOnce([]); // currentUserRank query
+    mocks.mockExecute.mockResolvedValueOnce([]); // user profile query
+
+    const result = await getLeaderboard('friends', null, 50);
+
+    expect(isOk(result)).toBe(true);
+    expect(mocks.mockRequest).toHaveBeenCalledWith(
+      'GET /users/{username}/following',
+      expect.objectContaining({ username: 'alice' }),
+    );
   });
 
   describe('friends leaderboard', () => {
