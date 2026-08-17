@@ -125,19 +125,22 @@ export async function getLeaderboard(
       }
     }
 
-    let userAccessToken: string | null = null;
-    if (sb) {
-      const {
-        data: { session },
-      } = await sb.auth.getSession();
-      userAccessToken = session?.provider_token ?? null;
-    }
-
     // Determine cache key. Personal scopes (like friends) are cached per-user, public ones are shared.
     const isUserSpecific = scope === 'friends';
     const cacheKey = `leaderboard:${scope}:${scopeId ?? 'all'}:${isUserSpecific ? userId : 'public'}:${limit}`;
     const cached = await cacheGet<LeaderboardEntry[]>(cacheKey);
     let entries: LeaderboardEntry[] = cached ?? [];
+
+    // The provider token is only needed to refresh the friends scope. Keep this
+    // inside the cache-miss path so public leaderboard hits do not incur an
+    // additional session lookup or network round trip.
+    let userAccessToken: string | null = null;
+    if (!cached && scope === 'friends' && sb) {
+      const {
+        data: { session },
+      } = await sb.auth.getSession();
+      userAccessToken = session?.provider_token ?? null;
+    }
 
     const db = tryGetDb();
     if (!db) return err('not_configured', 'database not configured');
