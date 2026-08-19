@@ -2,7 +2,6 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   mockGetUser: vi.fn(),
-  mockGetSession: vi.fn(),
   mockExecute: vi.fn(),
   mockCacheGet: vi.fn(),
   mockCacheSet: vi.fn(),
@@ -15,7 +14,6 @@ vi.mock('@/lib/supabase/server', () => ({
   getServerSupabase: vi.fn(() => ({
     auth: {
       getUser: mocks.mockGetUser,
-      getSession: mocks.mockGetSession,
     },
   })),
 }));
@@ -42,9 +40,6 @@ vi.mock('@/lib/github/app', () => ({
       listFollowingForUser: 'listFollowingForUser',
     },
   })),
-  getUserOctokit: vi.fn(() => ({
-    request: mocks.mockRequest,
-  })),
   getInstallOctokit: vi.fn(() => ({
     paginate: mocks.mockPaginate,
     request: mocks.mockRequest,
@@ -67,9 +62,6 @@ describe('getLeaderboard', () => {
           identities: [{ provider: 'github', identity_data: { user_name: 'alice' } }],
         },
       },
-    });
-    mocks.mockGetSession.mockResolvedValue({
-      data: { session: { provider_token: 'gh-user-token' } },
     });
     mocks.mockCacheGet.mockResolvedValue(null);
     mocks.mockCacheRateLimitHitSlidingWindow.mockResolvedValue({ count: 1, resetAt: null });
@@ -169,8 +161,7 @@ describe('getLeaderboard', () => {
     }
   });
 
-  it('uses the signed-in user token when no personal installation exists', async () => {
-    mocks.mockRequest.mockResolvedValueOnce({ data: [{ login: 'bob' }] });
+  it('does not call GitHub when no personal installation exists', async () => {
     mocks.mockCacheGet
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
@@ -183,10 +174,7 @@ describe('getLeaderboard', () => {
     const result = await getLeaderboard('friends', null, 50);
 
     expect(isOk(result)).toBe(true);
-    expect(mocks.mockRequest).toHaveBeenCalledWith(
-      'GET /users/{username}/following',
-      expect.objectContaining({ username: 'alice' }),
-    );
+    expect(mocks.mockRequest).not.toHaveBeenCalled();
   });
 
   describe('friends leaderboard', () => {
