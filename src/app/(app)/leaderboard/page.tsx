@@ -165,7 +165,7 @@ export default async function LeaderboardPage({
         }
       }
     }
-  } else {
+  } else if (!(finalScope === 'friends' && !hasPersonalInstallation)) {
     const result = await getLeaderboard(finalScope, scopeId, 100);
     if (isOk(result)) {
       entries = result.data.entries;

@@ -65,6 +65,9 @@ async function getFollowedHandles(
         // Keep this server-side guard as well so no invalid App-JWT request is
         // ever attempted if this action is called directly.
         followedHandles.push(activeHandle);
+        if (followedHandles.length > 0) {
+          await cacheSet(cacheKey, followedHandles, 600);
+        }
         return followedHandles;
       }
       const MAX_PAGES = 5;
