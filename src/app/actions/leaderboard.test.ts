@@ -149,7 +149,7 @@ describe('getLeaderboard', () => {
       .mockResolvedValueOnce(null) // leaderboard cache
       .mockResolvedValueOnce(null) // following cache miss, fetch from GitHub
       .mockResolvedValueOnce(['bob', 'carol', 'alice']); // following cache hit on currentUserRank re-fetch
-    mocks.mockExecute.mockResolvedValueOnce([]); // installations lookup
+    mocks.mockExecute.mockResolvedValueOnce([{ id: 1 }]); // installations lookup
     mocks.mockExecute.mockResolvedValueOnce(mockRows); // friends leaderboard rows
 
     const result = await getLeaderboard('friends', null, 50);
@@ -185,7 +185,7 @@ describe('getLeaderboard', () => {
         .mockResolvedValueOnce({ data: page1 })
         .mockResolvedValueOnce({ data: page2 });
       mocks.mockCacheGet.mockResolvedValueOnce(null).mockResolvedValueOnce(['bob', 'carol']);
-      mocks.mockExecute.mockResolvedValueOnce([]); // installations
+      mocks.mockExecute.mockResolvedValueOnce([{ id: 1 }]); // installations
       mocks.mockExecute.mockResolvedValueOnce([]); // friends leaderboard rows
       mocks.mockExecute.mockResolvedValueOnce([]); // currentUserRank query
       mocks.mockExecute.mockResolvedValueOnce([]); // user profile query
@@ -200,7 +200,7 @@ describe('getLeaderboard', () => {
       mocks.mockCacheGet
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(Array.from({ length: 500 }, (_, i) => `user${i}`));
-      mocks.mockExecute.mockResolvedValueOnce([]); // installations
+      mocks.mockExecute.mockResolvedValueOnce([{ id: 1 }]); // installations
       mocks.mockExecute.mockResolvedValueOnce([]); // friends leaderboard rows
       mocks.mockExecute.mockResolvedValueOnce([]); // currentUserRank query
       mocks.mockExecute.mockResolvedValueOnce([]); // user profile query
