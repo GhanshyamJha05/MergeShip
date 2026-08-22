@@ -184,7 +184,10 @@ describe('getLeaderboard', () => {
       mocks.mockRequest
         .mockResolvedValueOnce({ data: page1 })
         .mockResolvedValueOnce({ data: page2 });
-      mocks.mockCacheGet.mockResolvedValueOnce(null).mockResolvedValueOnce(['bob', 'carol']);
+      mocks.mockCacheGet
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(['bob', 'carol']);
       mocks.mockExecute.mockResolvedValueOnce([{ id: 1 }]); // installations
       mocks.mockExecute.mockResolvedValueOnce([]); // friends leaderboard rows
       mocks.mockExecute.mockResolvedValueOnce([]); // currentUserRank query
@@ -198,6 +201,7 @@ describe('getLeaderboard', () => {
       const fullPage = Array.from({ length: 100 }, (_, i) => ({ login: `user${i}` }));
       mocks.mockRequest.mockResolvedValue({ data: fullPage });
       mocks.mockCacheGet
+        .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(Array.from({ length: 500 }, (_, i) => `user${i}`));
       mocks.mockExecute.mockResolvedValueOnce([{ id: 1 }]); // installations
